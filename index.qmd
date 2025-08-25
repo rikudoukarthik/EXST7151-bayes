@@ -1,0 +1,5 @@
+---
+title: "Home"
+---
+
+Fall 2025 edition of Dr BeiBei Guo's course on Bayesian Data Analysis (EXST 7151) at Louisiana State University.

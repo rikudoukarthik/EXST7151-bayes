@@ -1,0 +1,18 @@
+project:
+  type: website
+  
+website:
+  title: "EXST 7151: Bayesian Data Analysis"
+  navbar:
+    search: true
+    left:
+      - href: index.qmd
+        text: Home
+      - href: lectures/index.qmd
+        text: Lecture notes
+  
+format:
+  html:
+    theme: flatly
+    toc: true
+    linkcolor: "#009E60"

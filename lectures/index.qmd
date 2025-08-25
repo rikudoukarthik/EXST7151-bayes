@@ -1,0 +1,78 @@
+---
+title: "Lecture notes"
+---
+
+# L1: Overview
+
+**2025-08-25**
+
+- Frequentist uses only observed patterns to make decision. Least squares and even maximum likelihood estimator are all frequentist.
+- Bayesian is completely different approach, based on priors (experience, expert opinion, or similar study). 
+- When N is low, frequentist estimates are not very reliable. e.g., coin toss 5 times gives 4 heads, but P = 0.8 is not very reliable, and it would be good to incorporate our prior information that the coin is fair (P = 0.5). Also, frequentist doesn’t allow us to calculate bias in parameters, i.e., p( P(H) > 0.5)—it considers these parameters as fixed and not as random variables.
+- Importantly, prior information is incorporated in a prior distribution, which is a critical component of Bayesian analysis.
+- Bayesian vs frequentist dichotomy a thing of the past. BeiBei considers herself to be pragmatic, using frequentist approaches for simple problems, large sample sizes, or when no priors, even though 90%+ of her research uses Bayesian.
+- Aim with the course is to show advantages of Bayesian in certain circumstances. Sometimes, results more interpretable. 
+- British mathematician and minister Thomas Bayes. Ideas of Bayes’ Theorem posthumously published in 1763 by Pierce.
+
+- Theta is prior, D is data. Posterior distribution = Bayesian estimate, i.e., p( theta | D ). p(D) is marginal likelihood, very difficult to estimate, but MCMC methods do not require this estimation.
+- Single-parameter models are easy to fit under Bayesian approach (binomial, poisson). Multiple-parameter models are difficult (normal distribution, simple regression).
+- **Correct interpretation of frequentist CI: if you take a large number of samples and construct CI for each, then 95% of those intervals will overlap the true value.** –> not very intuitive or interpretable, not very useful. In Bayesian, since parameters are treated as random variables, we CAN estimate an interval such that the parameter is in that interval with exact probability.
+- Frequentist p value can be interpreted as p(outcome at least as extreme as observed outcome | H0). Similarly, Bayesian, allows us to estimate p(H0) and p(H1)
+- F assumes data are a repeatable random sample (there is a frequency), while B considers data as observed from the realised sample (data are fixed, do not care about data not observed).
+- In F, inference is based on likelihood L(data|parameter), while in B inference is based on posterior estimate of parameter P(parameter(prior)|data)
+
+# L2: Frequentist & Bayesian estimation
+
+**2025-08-27**
+
+- Prior distributions are often beta distributed: two parameters alpha and beta (and N = alpha + beta)
+- In F, the parameter estimate is a point estimate (with possibility of calculating CIs), while in B, estimate is a probability distribution (posterior distribution, with possibility of calculating summary stat of distribution like mean)
+- y-axis of PDF can be interpreted as likelihood of probability values on x-axis (frequentist). Likelihood is important in both F and B! F uses MLE to estimate likelihood. 
+- If N is large, posterior will be closer to data, if small it will be closer to prior. Conversely for “confidence” of prior, which has a major influence on posterior estimate.
+- Major F criticism of B is that it doesn’t seem “objective enough” due to contingence on prior definitions (mean and sd). Prior distribution has to be justified! 
+- Generally, sd = 0.05 is very confident, sd = 0.2 is very unconfident (95% between 0.1 and 0.9 for mean = 0.5).
+
+- Three ways of calculating priors:
+	- Conjugate: when both prior and posterior follow the same data distribution family.
+		- Generally easier computation and convenient
+	- Historical: use historical data (e.g., fair coin p = 0.5)
+	- Non-informative prior: no prior information, e.g., uniform distribution, or U-shaped (unfair coin). (Why is latter considered non-informative? Will see later in course.)
+- One way of calculating CI in F is Wald CI (normal approximation), but poor when N is low. Other better alternatives sometimes approach Bayesian style. 
+- Distribution families:
+	- Beta is a truncated normal distribution
+	- Can also use truncated t distribution (t is similar to normal, just with fatter tails)
+	- Or truncated chi-sq (like normal but only positive values) or truncated F
+	- But some of these are difficult to get summary values from if posterior also that distribution (don’t give closed-form distributions). Beta on the other hand allows easy summaries.
+	- What prior distribution gives closed-form posterior distribution depends on sampling model distribution (distribution of data). Under binomial sampling distribution, a beta prior leads to a beta posterior. But e.g. normal sampling beta prior does not give closed-form posterior.
+- Bayesian estimate gives an updated posterior distribution, but that info gives us even more like:
+	- Probabilites that the parameter theta is in a given interval
+	- But also, conversely, given (e.g, 95%) interval in which the parameter lies (posterior credible interval, with probability interpretation)
+- For estimating population mean:
+	- F formula is pop-mean = sample-mean
+	- B posterior mean (which is summary value) is weighted average of sample mean and prior guess—incorporates sample size, prior precision (confidence in prior), and prior mean—but formula depends on distribution of prior
+	
+	
+```{r}
+# explore probability mass function of binomial distribution
+
+dbinom(0, 20, 0.5) # probability of getting 0 successes out of 20 when p(success) is 0.5
+dbinom(10, 20, 0.5) 
+
+plot(0:20, dbinom(0:20, 20, 0.5)) # probability of getting 0 successes out of 20 when p(success) is 0.5
+plot(0:20, dbinom(0:20, 20, 0.05)) # lower success prob
+
+
+# explore beta distribution
+
+pbeta(0.2, 2, 20) # prob that parameter theta < 0.2 for a beta(2, 20) distribution
+# after incorporating prior and data, new beta(2, 40) distribution as Bayesian estimate
+# but the Bayesian estimate gives us more info than just distribution
+pbeta(0.2, 2, 40) # updated prob as before
+1 - pbeta(0.15, 2, 40) # prob that parameter theta > 0.15 given our data and posterior dist
+pbeta(0.15, 2, 40, lower.tail = FALSE)
+# these are probabilities that theta is in some interval
+# conversely, posterior credible interval:
+qbeta(c(0.025, 0.975), 2, 40)
+# which means P(0.006 < theta < 0.13 | data) = 0.95
+```
+
