@@ -6,73 +6,131 @@ title: "Lecture notes"
 
 **2025-08-25**
 
-- Frequentist uses only observed patterns to make decision. Least squares and even maximum likelihood estimator are all frequentist.
-- Bayesian is completely different approach, based on priors (experience, expert opinion, or similar study). 
-- When N is low, frequentist estimates are not very reliable. e.g., coin toss 5 times gives 4 heads, but P = 0.8 is not very reliable, and it would be good to incorporate our prior information that the coin is fair (P = 0.5). Also, frequentist doesn’t allow us to calculate bias in parameters, i.e., p( P(H) > 0.5)—it considers these parameters as fixed and not as random variables.
-- Importantly, prior information is incorporated in a prior distribution, which is a critical component of Bayesian analysis.
-- Bayesian vs frequentist dichotomy a thing of the past. BeiBei considers herself to be pragmatic, using frequentist approaches for simple problems, large sample sizes, or when no priors, even though 90%+ of her research uses Bayesian.
-- Aim with the course is to show advantages of Bayesian in certain circumstances. Sometimes, results more interpretable. 
-- British mathematician and minister Thomas Bayes. Ideas of Bayes’ Theorem posthumously published in 1763 by Pierce.
+## Quick why
 
-- Theta is prior, D is data. Posterior distribution = Bayesian estimate, i.e., p( theta | D ). p(D) is marginal likelihood, very difficult to estimate, but MCMC methods do not require this estimation.
-- Single-parameter models are easy to fit under Bayesian approach (binomial, poisson). Multiple-parameter models are difficult (normal distribution, simple regression).
-- **Correct interpretation of frequentist CI: if you take a large number of samples and construct CI for each, then 95% of those intervals will overlap the true value.** –> not very intuitive or interpretable, not very useful. In Bayesian, since parameters are treated as random variables, we CAN estimate an interval such that the parameter is in that interval with exact probability.
-- Frequentist p value can be interpreted as p(outcome at least as extreme as observed outcome | H0). Similarly, Bayesian, allows us to estimate p(H0) and p(H1)
-- F assumes data are a repeatable random sample (there is a frequency), while B considers data as observed from the realised sample (data are fixed, do not care about data not observed).
-- In F, inference is based on likelihood L(data|parameter), while in B inference is based on posterior estimate of parameter P(parameter(prior)|data)
+- Frequentist uses only observed patterns to make decision. Least squares and even maximum likelihood estimator are all frequentist. Bayesian is completely different approach, based on priors (experience, expert opinion, or similar study). 
+- When N is low, F estimates are not very reliable. e.g., coin toss 5 times gives 4 heads, but $P = 0.8$ is not very reliable, and it would be good to incorporate our prior information that the coin is fair ($P = 0.5$). Also, F doesn’t allow us to calculate bias in parameters, e.g., $p(P(H) > 0.5)$—it considers these parameters as fixed and not as random variables.
+- Importantly, **prior information is incorporated in a prior distribution**, which is a critical component of Bayesian analysis.
+
+## What
+
+- Aim with the course is to show advantages of Bayesian in certain circumstances. In some cases, B results more interpretable than F. 
+- British mathematician and minister Thomas Bayes. Ideas of Bayes’ Theorem posthumously published in 1763 by Pierce. But strong integration in practice only recently, due to technological revolution (strong compute).
+- Bayesian *versus* frequentist dichotomy a thing of the past. BeiBei considers herself to be pragmatic, using F approaches for simple problems, large sample sizes, or when no priors, even though 90%+ of her research uses B.
+- $\theta$ is prior, $D$ is data. Posterior distribution = $p( \theta | D )$, i.e., Bayesian estimate. $p(D)$ is marginal likelihood, very difficult to estimate, but MCMC methods do not require this estimation.
+- Single-parameter models are easy to fit under B (e.g., binomial, poisson). Multiple-parameter models are difficult (e.g., normal distribution, simple regression).
+
+## Interpretability of F & B
+
+- Uncertainty/confidence:
+    - Correct interpretation of F CI: if you take a large number of samples and construct CI for each, then **95% of those intervals will overlap the true value**. --> not very intuitive or interpretable, not very useful. 
+    - In B, since parameters are treated as random variables, we CAN estimate an interval such that the **parameter is in that interval with exact probability**---which is the more intuitive definition of "uncertainty".
+    - One way of calculating CI in F is Wald CI (normal approximation), but poor when $N$ is low. Other better alternatives sometimes approach B style. 
+- p-value:
+    - In F, interpreted as $p(\text{outcome at least as extreme as observed outcome} | H_0)$, not $p(H_0)$. 
+    - But B allows us to estimate $p(H0)$ and $p(H1)$
+- Data samples:
+    - F assumes data are a repeatable random sample
+    - B considers data as observed from the realised sample---data are fixed, do not care about data not observed.
+- Inference:
+    - In F, inference is based on likelihood, $L(D|\theta)$ (data|parameter)
+    - In B, inference is based on posterior estimate of parameter, $P(\theta|D)$ (prior|data)
 
 # L2: Frequentist & Bayesian estimation
 
 **2025-08-27**
 
-- Prior distributions are often beta distributed: two parameters alpha and beta (and N = alpha + beta)
-- In F, the parameter estimate is a point estimate (with possibility of calculating CIs), while in B, estimate is a probability distribution (posterior distribution, with possibility of calculating summary stat of distribution like mean)
-- y-axis of PDF can be interpreted as likelihood of probability values on x-axis (frequentist). Likelihood is important in both F and B! F uses MLE to estimate likelihood. 
-- If N is large, posterior will be closer to data, if small it will be closer to prior. Conversely for “confidence” of prior, which has a major influence on posterior estimate.
-- Major F criticism of B is that it doesn’t seem “objective enough” due to contingence on prior definitions (mean and sd). Prior distribution has to be justified! 
-- Generally, sd = 0.05 is very confident, sd = 0.2 is very unconfident (95% between 0.1 and 0.9 for mean = 0.5).
+## Prior and posterior
 
-- Three ways of calculating priors:
-	- Conjugate: when both prior and posterior follow the same data distribution family.
-		- Generally easier computation and convenient
-	- Historical: use historical data (e.g., fair coin p = 0.5)
-	- Non-informative prior: no prior information, e.g., uniform distribution, or U-shaped (unfair coin). (Why is latter considered non-informative? Will see later in course.)
-- One way of calculating CI in F is Wald CI (normal approximation), but poor when N is low. Other better alternatives sometimes approach Bayesian style. 
-- Distribution families:
-	- Beta is a truncated normal distribution
-	- Can also use truncated t distribution (t is similar to normal, just with fatter tails)
-	- Or truncated chi-sq (like normal but only positive values) or truncated F
-	- But some of these are difficult to get summary values from if posterior also that distribution (don’t give closed-form distributions). Beta on the other hand allows easy summaries.
-	- What prior distribution gives closed-form posterior distribution depends on sampling model distribution (distribution of data). Under binomial sampling distribution, a beta prior leads to a beta posterior. But e.g. normal sampling beta prior does not give closed-form posterior.
-- Bayesian estimate gives an updated posterior distribution, but that info gives us even more like:
-	- Probabilites that the parameter theta is in a given interval
-	- But also, conversely, given (e.g, 95%) interval in which the parameter lies (posterior credible interval, with probability interpretation)
-- For estimating population mean:
-	- F formula is pop-mean = sample-mean
-	- B posterior mean (which is summary value) is weighted average of sample mean and prior guess—incorporates sample size, prior precision (confidence in prior), and prior mean—but formula depends on distribution of prior
-	
-	
+- In many cases parameter of interest ($\theta$) is related to proportion/prevalence/probability. 
+    - In these cases, distribution of data ($D$) is binomial, i.e., probability of something. This is similar to F methods, e.g., using GLMs with binomial distribution to infer about probability/proportion of something. 
+    - But distribution of parameter ($\theta$) is beta, i.e., proportion of something. This distribution is unique to B methods, and so is having to think about the appropriate parameter space distribution.
+    - Beta distribution has two parameters $\alpha$ and $\beta$, and the sample size $N = \alpha + \beta$. Again, an intuitive way of describing the distribution of probability/proportion/odds? parameters. 
+    - $B = [0, 1]$, i.e., truncated normal distribution.
+- Estimate of $\theta$:
+    - F gives point estimate, although there is the possibility of calculating non-intuitive CIs
+    - Estimate in B is a probability distribution (i.e., posterior distribution), and it is possible to also calculate summary stats of the distribution, like mean, median, etc.
+    - The y-axis of such PDFs can be interpreted as the likelihoods of each probability value on the x-axis---each of which can be thought of a F estimate.
+- Likelihood is therefore important in both F and B! F uses maximum likelihood estimator (MLE).
+
 ```{r}
 # explore probability mass function of binomial distribution
 
-dbinom(0, 20, 0.5) # probability of getting 0 successes out of 20 when p(success) is 0.5
-dbinom(10, 20, 0.5) 
+# probability of getting 0 successes out of 20 when p(success) is 0.5
+dbinom(0, 20, 0.5) 
+plot(0:20, dbinom(0:20, 20, 0.5)) 
 
-plot(0:20, dbinom(0:20, 20, 0.5)) # probability of getting 0 successes out of 20 when p(success) is 0.5
-plot(0:20, dbinom(0:20, 20, 0.05)) # lower success prob
+# when success prob is lower:
+plot(0:20, dbinom(0:20, 20, 0.05)) 
 
+```
 
+- Compromise between prior and data:
+    - If $N(D)$ is large, posterior estimate tends closer to $D$, but if small tends closer to prior $\theta$.
+    - On the other hand, if confidence in prior is high (i.e., low $sd(\theta)$), posterior estimate tends closer to prior $\theta$.
+    - **Major critique** from F side about B methods: not objective enough, due to contingence on prior definitions (mean and sd). Prior distribution has to be justified! (Contingence on $N(D)$ is shared between F and B.)
+    - Rule of thumb for beta distribution: $sd(\theta)$ = 0.05 is very confident, $sd(\theta)$ = 0.2 is very unconfident (means 95% between 0.1 and 0.9 for mean = 0.5).
+    
+## Defining priors
+
+- Three ways of calculating priors:
+    - Conjugate: when both prior and posterior follow the same data distribution family. Generally *easier computation and convenient*.
+    - Historical: use historical info (e.g., fair coin p = 0.5)
+    - Non-informative prior: no prior information, e.g., uniform distribution, or U-shaped (unfair coin). (Why is latter considered non-informative? Will see later in course.)
+- Distribution families:
+    - Beta is a truncated normal distribution. We can also use truncated t distribution (t is similar to normal, just with fatter tails), or truncated chi-sq (like normal but only positive values) or truncated F.
+    - But some of these are difficult to get summary values from if posterior also that distribution: they don’t give closed-form distributions (area under curve sums to 1). 
+    - Beta priors on the other hand give closed-form posterior distributions and therefore allow easy summaries---for binomial sampling distribution of data.
+    - What prior distribution gives closed-form posterior distribution depends on sampling model distribution (distribution of data). Under binomial sampling distribution, a beta prior leads to a beta posterior. But e.g. normal sampling beta prior does not give closed-form posterior.
+
+## Posterior estimate
+
+- Bayesian estimate gives an updated $\theta$ (posterior) distribution, which gives us even more info like:
+	- Probabilites that the $\theta$ lies in a given interval
+	- But also, conversely, defines interval (of given confidence, e.g, 95%) in which the parameter lies---the posterior credible interval, which has a probability interpretation.
+- For estimating population mean:
+	- F formula is pop-mean = sample-mean
+	- B posterior mean (which is a summary value) is weighted average of sample mean and prior guess---incorporates sample size, prior confidence, and prior mean ($N(D)$, $sd(\theta)$, $\bar{\theta}$)---but formula depends on distribution of prior $\theta$.
+	
+	
+```{r}
 # explore beta distribution
 
-pbeta(0.2, 2, 20) # prob that parameter theta < 0.2 for a beta(2, 20) distribution
-# after incorporating prior and data, new beta(2, 40) distribution as Bayesian estimate
-# but the Bayesian estimate gives us more info than just distribution
-pbeta(0.2, 2, 40) # updated prob as before
-1 - pbeta(0.15, 2, 40) # prob that parameter theta > 0.15 given our data and posterior dist
-pbeta(0.15, 2, 40, lower.tail = FALSE)
+# theta [0, 1] with corresponding probs for a beta(2, 20) distribution
+plot(seq(0, 1, 0.01), 
+     dbeta(seq(0, 1, 0.01), 2, 20)) 
+
+# prob that theta < 0.2 for a beta(2, 20) distribution
+pbeta(0.2, 2, 20) 
+```
+
+```{r}
+# suppose, after incorporating prior and data, new beta(2, 40) distribution as 
+# Bayesian estimate, but this estimate gives us more info than just distribution:
+
+# updated theta [0, 1] with corresponding probs
+plot(seq(0, 1, 0.01), 
+     dbeta(seq(0, 1, 0.01), 2, 40)) 
+
+# updated prob that theta < 0.2
+pbeta(0.2, 2, 40) 
+
+# prob that theta > 0.15 given our data and posterior dist
+1 - pbeta(0.15, 2, 40) ; pbeta(0.15, 2, 40, lower.tail = FALSE)
+```
+
+```{r}
 # these are probabilities that theta is in some interval
-# conversely, posterior credible interval:
+# conversely, posterior 95% credible interval:
 qbeta(c(0.025, 0.975), 2, 40)
 # which means P(0.006 < theta < 0.13 | data) = 0.95
+
+# add CI to figure
+plot(seq(0, 1, 0.01), 
+     dbeta(seq(0, 1, 0.01), 2, 40)) 
+rect(xleft = qbeta(c(0.025, 0.975), 2, 40)[1], 
+     xright = qbeta(c(0.025, 0.975), 2, 40)[2], 
+     ybottom = -1, ytop = 20,
+     col = rgb(0,0.5,0.75, alpha = 0.25), border = NA)
 ```
 

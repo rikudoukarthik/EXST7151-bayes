@@ -10,9 +10,16 @@ website:
         text: Home
       - href: lectures/index.qmd
         text: Lecture notes
-  
+knitr:
+  opts_chunk: 
+    collapse: true
+    fig.show: "hold"
+editor_options: 
+  chunk_output_type: console
+
 format:
   html:
     theme: flatly
     toc: true
     linkcolor: "#009E60"
+    embed-resources: true
