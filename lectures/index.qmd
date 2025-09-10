@@ -2,7 +2,7 @@
 title: "Lecture notes"
 ---
 
-# L1: Overview
+# Overview
 
 **2025-08-25**
 
@@ -36,7 +36,7 @@ title: "Lecture notes"
     - In F, inference is based on likelihood, $L(D|\theta)$ (data|parameter)
     - In B, inference is based on posterior estimate of parameter, $P(\theta|D)$ (prior|data)
 
-# L2: Frequentist & Bayesian estimation
+# Frequentist & Bayesian estimation
 
 **2025-08-27**
 
@@ -134,3 +134,88 @@ rect(xleft = qbeta(c(0.025, 0.975), 2, 40)[1],
      col = rgb(0,0.5,0.75, alpha = 0.25), border = NA)
 ```
 
+# Probability concepts and Bayes Rule for events
+
+- Unconditional probability: wrt sample space. Conditional probability: wrt **sample space updated based on posterior distribution** (new info).
+- In the case of a fair die, for the first roll, $P(A) = \frac{1}{6}$, but based on what first roll outcome was, $P(A)$ changes according to the posterior distribution. 
+- $A$ and $B$ are independent if $P(A|B) = P(A)$ or equivalently $P(A \cap B ) = P(A)P(B)$
+- Law of total probability: $P(B) = P(B|A)P(A) + P(B|A^C)P(A^C)$ (extended to any number of $A$ partitions making up $S$)
+- Bayes rule for two events: $P(A|B) = \frac{P(B|A)P(A)}{P(B)} = \frac{P(B|A)P(A)}{P(B|A)P(A) + P(B|A^C)P(A^C)}$
+    - For multiple events: $P(A_j|B) = \frac{P(B|A_j)P(A_j)}{P(B)} = \frac{P(B|A_j)P(A_j)}{\sum_{i=1}^{n} P(B|A_i)P(A_i)}$
+- Joint distribution/two-way distribution: combine distribution of sample spaces of two variables together. Marginal distribution is usually the unconditional probability. 
+- Bayesian updation of sample space based on posterior distribution does not change relative probabilities of each outcome but adjusts absolute values so that they add to 1 within this new sample space. The new value is old value divided by marginal probability of updated event.
+
+# Bayes Rule (for events) examples, and probability distributions
+
+- One example of widely accepted and non-controversial use of Bayes Rule is diagnostic tests like HIV tests. Here, sample space partition has four events: true positive, true negative, false positive, false negative. 
+- Every random variable has an associated probability distribution. For discrete random variables, this is called probability mass function (pmf), while for continuous random variables it is called probability density function (pdf).
+- Every random variable also has a cumulative distribution function (cdf; $F(y)$).
+- Unlike pmf, cdf is not restricted to sample space. e.g., in Bernoulli trials, cdf is still defined for $y \lt 0$. $F(y) = P(Y \leq y)$.
+- cdf of any discrete random variable is a step function. For Bernoulli, in the step function the size of jump at $y = 0$ equals the failure probability and size of jump at $y = 1$ is the success probability.
+
+```{r}
+curve(pbinom(x, 1, 0.3), -2, 2)
+curve(pbinom(x, 1, 0.5), -2, 2)
+```
+
+- Binomial distribution is for series of Bernoulli trials with same success probability. e.g., number of heads in $n$ number of rolls. Bernoulli is a special case of binomial, where $n = 1$
+
+```{r}
+curve(pbinom(x, 8, 0.5), -1, 10)
+```
+
+- Every random variable also has an **expected value** or mean, where the mean is a weighted average based on the pmf. 
+- We can estimate/approximate this mean by sampling a large number of numbers from the pmf and taking their mean.
+
+```{r}
+# Bernoulli
+rand_nos <- rbinom(10000, 1, 0.1) # success p = 0.1
+mean(rand_nos)
+
+mean(rbinom(10, 1, 0.1)); mean(rbinom(100, 1, 0.1)); mean(rbinom(1000, 1, 0.1)); mean(rbinom(10000, 1, 0.1)); mean(rbinom(100000, 1, 0.1))
+```
+
+- Poisson sample space is 0 to infinity.
+- Continuous random variables have sample space that's uncountable. Beta distribution sample space is the unit interval $[0,1]$.
+- For continuous variable, probability of any single value is zero, so instead of pmf we use pdf. Where we sum individual probabilites in pmf, we integrate across in pdf.
+- The difference is that for discrete, y axis is limited to 0 and 1, but for continuous this is not the case. Hence, pdf y-axis does not have probability interpretation like pmf, but relative likelihoods still remain.
+- The cdf of continuous variable is: $F(a) = P(Y \let a) = \int_{-\infty}^{a} f(y)dy$
+- Uniform distribution is not valid for range including infinity, because then the area under the curve doesn't sum to 1. However, in Bayesian stats, we use such distributions when selecting *improper priors*. 
+- Normal distribution is symmetric, so cdf at mean value is 0.5.
+
+```{r}
+dnorm(0, 0, 1)
+pnorm(0, 0, 1)
+```
+
+- Gamma is a continuous version of Poisson, so $(0,\infty)$
+    - Exponential and chi-square are special cases of gamma.
+    
+Beta
+    
+- Uniform distribution is a special case of beta: $U(0, 1) = B(1, 1)$.
+- Beta distribution with $\alpha = \beta$ yields symmetric distribution around 0.5.
+- When $\alpha \lt 1$ and $\beta \lt 1$ the distribution is U-shaped. 
+- Variance increases as $\alpha$ and $\beta$ decrease. 
+
+WHY doesn't y axis for continuous have probability interpretation?
+
+Is it correct to say beta is continuous extension of Bernoulli?
+
+# Joint & conditional distributions, and likelihood function
+
+**2025-09-10**
+
+- Marginal distributions usually denoted using subscript: $f_x(x)$
+- Conditional distribution for discrete RV consists of multiple individual conditional probabilities
+- Conditional distribution of y given x: $ f(y|x) = P(Y = y | x = x) = \frac{f(x,y)}{f_x(x)} $
+- In most cases, we only use, and need, the unnormalised probability distributions (esp. for posterior) because getting normalised (which involves multiplication by a constant) is computationally demanding (??). But in any case, the unnormalised tells us relative proportions.
+- Knowing marginal distributions cannot help construct joint distributions, because different joints can have the same marginals
+- In multivariate case, just like in univariate, the pmf will become pdf, but here we need double integrals instead of single integrals. (Two dimensions, so one integral for each of x and y.)
+
+Bayes rule for variables...
+
+- Likelihood closely related to pdfs, but definition highlight key difference between F and B paradigms
+- In F, parameters assumed fixed, and data are repeatable random sample (x and y random, theta or other params fixed). In B, parameters assumed random, data fixed (observed from realised sample). Likelihood Function is that function of theta given data which equals the pmf/pdf of data given theta.
+- Likelihood Function used after data observed
+- It is important in both F and B. Maximum Likelihood Estimator of parameter $\mu$ gives sample mean.

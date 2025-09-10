@@ -17,6 +17,7 @@ knitr:
 editor_options: 
   chunk_output_type: console
 
+number-sections: true
 format:
   html:
     theme: flatly
