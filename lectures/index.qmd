@@ -219,3 +219,79 @@ Bayes rule for variables...
 - In F, parameters assumed fixed, and data are repeatable random sample (x and y random, theta or other params fixed). In B, parameters assumed random, data fixed (observed from realised sample). Likelihood Function is that function of theta given data which equals the pmf/pdf of data given theta.
 - Likelihood Function used after data observed
 - It is important in both F and B. Maximum Likelihood Estimator of parameter $\mu$ gives sample mean.
+
+# Bayes Rule for variables
+
+**2025-09-15**
+
+- Relates to conditional & marginal distributions instead of events
+- $ f(y|x) = \frac{f(x,y)}{f(y)} = \frac{f(y|x)f(x)}{f(y)} $
+- Key application of this rule is when $y$ is our data and $x$ is a model parameter/structure
+- Sampling model (i.e., likelihood) specifies distribution based on data, but we want to convert that to posterior distribution of the parameter based on our data
+- $posterior = (likelihood)(prior)/(marginal likelihood)$
+- $ p(\theta | D) = \frac{L(\theta | D) p(\theta)}{p(D)}$, where $D$ is the observed data, $\theta$ represents parameters 
+- In Bayesian framework, hyper-parameters are parameters only in prior distribution and not in the sampling model (i.e., parameters given for prior $\theta$ distribution). Parameters appear in the likelihood (sampling model). Hyper-parameters can also be unknowns, and their prior distributions are called hyper-prior distributions.
+- Priors may not be flat, but might still have small effect of posterior and are still considered non-informative priors.
+- Calculation of marginal likelihood is most complicated step of Bayesian analysis, and is rarely actually done. But is a function of data only, not of parameter.
+    - In practice, omission of this step just means we skip the normalising step that converts unnormalised distributions to exact posterior distributions (which are proportional to the unnormalised).
+    - Therefore, $ p(\theta | D) \propto L(\theta | D) p(\theta)$ (called "kernel")
+
+An example to show calculations:
+
+```{r}
+n <- 12
+y <- 3 
+# observed data: 3 H out of 12 tosses
+theta <- c(0.25, 0.5, 0.75) # limiting possible values for simplicity
+prior <- c(0.25, 0.5, 0.25)
+
+likelihood <- dbinom(y, n, theta) # pdf/pmf
+unnorm_post <- prior*likelihood
+marg_likelihood <- sum(unnorm_post) # normalising constant
+(posterior <- unnorm_post/marg_likelihood)
+```
+
+```{r}
+library(tidyverse)
+
+df <- tibble(x = theta, y = prior, lab = "prior") %>% 
+  bind_rows(tibble(x = theta, y = likelihood, lab = "likelihood")) %>% 
+  bind_rows(tibble(x = theta, y = posterior, lab = "posterior")) %>% 
+  mutate(lab = factor(lab, levels = c("prior", "likelihood", "posterior")))
+
+ggplot(df) +
+  geom_col(aes(x = x, y = y)) +
+  scale_x_continuous(breaks = seq(0, 1, 0.25), limits = c(0, 1)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.2), limits = c(0, 1)) +
+  facet_wrap(~ lab, ncol = 1, strip.position = "left") +
+  labs(x = "theta", y = "") +
+  theme_classic()
+```
+- $\theta$ we estimate has meaning only in specific context of sampling model we choose, so sometimes it's useful to explicitly state model in mind
+- Model comparison: can consider two different models as two different parameters you estimate (following Bayes rule). Then the ratio of the two posterior distributions is the posterior odds, which is a product of Bayes factor and prior odds.
+    - Sometimes, posterior probabilities of both may be very similar, so instead of model selection you can do model averaging. Bayesian Model Averaging.
+
+# Beta-binomial model
+
+**2025-09-17**
+
+- Three goals for inference from data:
+    - Estimation of parameter values
+    - Prediction of future data values (prior and posterior *predictive* distributions)
+    - Model comparison
+- Advantages of Bayesian Inference:
+    - Incorporate external info
+    - Account for sources of uncertainty
+    - *Learning* paradigm: Sequential Analysis (apply Bayes's Rule repeatedly)
+- Difficulties/Criticisms:
+    - Specificaiton of prior is critical but difficult
+    - High-dimensional integrals
+        - But no longer a concern since MCMC (allow fitting complex models without large sample approximations)
+    - Seems subjective (contingent on priors)
+        - Use concrete prior info if available, else noninformative/vague priors
+        - When sample size large, effect of prior is much lower (unless prior is very peaked)
+        - "Reality": Scientists often disagree, different knowledge bases. Bayesian methods allow us to actually formally incorporate this info in decision-making process. (e.g., model selection/averaging)
+  
+Beta-binomial model:
+
+- A better non-informative prior for beta distribution (than uniform) is an inverse-U, because in this case the impact of the prior on posterior is even lower.
