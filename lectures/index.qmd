@@ -295,3 +295,124 @@ ggplot(df) +
 Beta-binomial model:
 
 - A better non-informative prior for beta distribution (than uniform) is an inverse-U, because in this case the impact of the prior on posterior is even lower.
+
+**2025-09-22*
+
+- With MCMC don't need to do any integration
+- If prior is beta, posterior is also beta
+- Can get summary statistics either using equation by inputting parameters of posterior, or by MCMC which involves repeated sampling from the distribution (no need to know parameters).
+
+```{r} 
+23/(23+7); 23*7/((23+7)^2 * (23+7+1)) # easily know the equation
+mcmc <- rbeta(10000, 23, 7); mean(mcmc); var(mcmc)
+# but low MCMC sample size is bad
+mcmc <- rbeta(5, 23, 7); mean(mcmc); var(mcmc)
+```
+
+Getting credible intervals:
+
+```{r}
+qbeta(c(0.025, 0.975), 23, 7) # 95% CI
+pbeta(0.5, 23, 7, lower.tail = FALSE) # less than 50%
+```
+
+- One way to incorporate uncertainty between your different sources of data when updating priors is to lower parameters of prior, e.g., instead of $B(5,5)$ can use $B(1,1)$ or $B(2,2)$.
+
+**Sensitivity analysis for prior parameters**: posterior summaries for different $\alpha$ and $\beta$.
+
+```{r}
+18/21 # sample mean
+# uniform prior (1,1) less influential on posterior
+curve(dbeta(x, 19, 4), 0, 1) 
+# more confident prior (100,100) more influential
+curve(dbeta(x, 118, 103), 0, 1) 
+
+```
+
+- Data order invariance: updating of priors should give same final posterior regardless of order of intermediate posteriors and data, and even if you combine all the intermediate updations into one large updation.
+- Credible interval (which is quantile-based) has an issue for asymmetric posteriors that some higher likelihood values are excluded from the interval and lower likelihood values are included. So, there is an alternative considering 95% highest posterior density (HPD) region instead.
+
+**2025-09-24*
+
+- HPD is that part of parameter space containing 95% values such that none of the values outside the interval have higher probability density than those inside (for unimodal, lower and upper quantiles have same).
+- The width of the HPD region is another way of gauging uncertainty of beliefs
+- If unimodal, HPD region is an interval, but else it's just a region
+
+```{r}
+library(binom)
+
+binom.bayes(11, 14, type = "highest", prior.shape1 = 1, prior.shape2 = 1)
+binom.bayes(11, 14, type = "highest", prior.shape1 = 100, prior.shape2 = 100)
+# quantile-based
+binom.bayes(11, 14, type = "central", prior.shape1 = 1, prior.shape2 = 1)
+
+# save and plot density
+line1 <- binom.bayes(11, 14, 
+                     type = "central", prior.shape1 = 1, prior.shape2 = 1)
+binom.bayes.densityplot(line1)
+```
+
+- Can build informative priors using quantile info. If we know equally likely that p is less than and greater than 0.3, and that 90% likely that p is greater than 0.5:
+
+```{r}
+library(LearnBayes)
+quantile1 <- list(p = 0.5, x = 0.3)
+quantile2 <- list(p = 0.9, x = 0.5)
+beta.select(quantile1, quantile2)
+qbeta(c(0.5, 0.9), 3.26, 7.19)
+```
+
+- Can use discrete priors if we don't want high precision
+
+```{r}
+p <- seq(0.05, 0.95, by = 0.1)
+prior <- c(1, 5.2, 8, 7.2, 4.6, 2.1, 0.7, 0.1, 0, 0) # beliefs
+prior <- prior/sum(prior) # normalise to sum to 1
+plot(p, prior, type = "h", ylab = "prior probability")
+
+# data: s=11, f=16
+data <- c(11, 16)
+post <- LearnBayes::pdisc(p, prior, data)
+round(cbind(p, prior, post), 2)
+
+```
+
+After functionising, we can make quick comparisons of how sample size and prior parameters affect posterior updation.
+
+```{r}
+fn_post <- function(true_theta, n, prior_alpha, prior_beta) {
+  
+  set.seed(1)
+  y <- rbinom(1, n, true_theta) # simulated observed successes
+  post_alpha <- prior_alpha + y
+  post_beta <- prior_beta + n - y
+  
+  curve(dbeta(x, prior_alpha, prior_beta),
+        ylim = c(0, 11), lty = 3, lwd = 4, 
+        xlab = expression(theta),
+        ylab = "density",
+        main = paste("prior sample size = ", 
+                     prior_alpha + prior_beta,
+                     "; n = ",
+                     n))
+  curve(dbeta(x, y + 1, n - y + 1),
+        add = TRUE, lty = 2, lwd = 4)
+  curve(dbeta(x, post_alpha, post_beta),
+        add = TRUE, lty = 1, lwd = 4)
+  legend(0, 10, c("Prior", "Likelihood", "Posterior"),
+         lty = 3:1, lwd = 3)
+  
+}
+
+par(mfrow = c(2, 2))
+fn_post(true_theta = 0.8, n = 1, prior_alpha = 1.5, prior_beta = 6)
+fn_post(true_theta = 0.8, n = 7, prior_alpha = 1.5, prior_beta = 6)
+fn_post(true_theta = 0.8, n = 50, prior_alpha = 1.5, prior_beta = 6)
+fn_post(true_theta = 0.8, n = 100, prior_alpha = 1.5, prior_beta = 6)
+
+fn_post(true_theta = 0.8, n = 1, prior_alpha = 150, prior_beta = 600)
+fn_post(true_theta = 0.8, n = 7, prior_alpha = 150, prior_beta = 600)
+fn_post(true_theta = 0.8, n = 50, prior_alpha = 150, prior_beta = 600)
+fn_post(true_theta = 0.8, n = 100, prior_alpha = 150, prior_beta = 600)
+```
+
