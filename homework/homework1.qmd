@@ -2,6 +2,8 @@
 title: "Homework 1"
 subtitle: "2025 Fall EXST 7151"
 date: today
+author: "Karthik Thrikkadeeri"
+table-of-contents: true
 number-sections: true
 embed-resources: true
 knitr:

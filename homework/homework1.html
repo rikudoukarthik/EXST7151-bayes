@@ -6,6 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="author" content="Karthik Thrikkadeeri">
 <meta name="dcterms.date" content="2025-09-28">
 
 <title>Homework 1</title>
@@ -2310,10 +2311,24 @@ window.Quarto = {
 
 </head>
 
-<body class="fullcontent quarto-light">
+<body class="quarto-light">
 
 <div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
-
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#what-is-the-posterior-distribution-of-theta" id="toc-what-is-the-posterior-distribution-of-theta" class="nav-link active" data-scroll-target="#what-is-the-posterior-distribution-of-theta"><span class="header-section-number">1</span> What is the posterior distribution of <span class="math inline">\(\theta\)</span>?</a></li>
+  <li><a href="#plot-the-prior-likelihood-and-posterior-on-the-same-graph" id="toc-plot-the-prior-likelihood-and-posterior-on-the-same-graph" class="nav-link" data-scroll-target="#plot-the-prior-likelihood-and-posterior-on-the-same-graph"><span class="header-section-number">2</span> Plot the prior, likelihood, and posterior on the same graph</a></li>
+  <li><a href="#get-the-posterior-meanvariancesd-of-θ" id="toc-get-the-posterior-meanvariancesd-of-θ" class="nav-link" data-scroll-target="#get-the-posterior-meanvariancesd-of-θ"><span class="header-section-number">3</span> Get the posterior mean/variance/sd of θ</a></li>
+  <li><a href="#get-the-posterior-probability-that-θ-is-less-than-.485" id="toc-get-the-posterior-probability-that-θ-is-less-than-.485" class="nav-link" data-scroll-target="#get-the-posterior-probability-that-θ-is-less-than-.485"><span class="header-section-number">4</span> Get the posterior probability that θ is less than .485</a></li>
+  <li><a href="#get-the-95-credible-interval-for-θ" id="toc-get-the-95-credible-interval-for-θ" class="nav-link" data-scroll-target="#get-the-95-credible-interval-for-θ"><span class="header-section-number">5</span> Get the 95% credible interval for θ</a></li>
+  <li><a href="#get-the-95-hpd-region-for-θ" id="toc-get-the-95-hpd-region-for-θ" class="nav-link" data-scroll-target="#get-the-95-hpd-region-for-θ"><span class="header-section-number">6</span> Get the 95% HPD region for θ</a></li>
+  <li><a href="#what-is-the-posterior-predictive-distribution-of-a-future-outcome" id="toc-what-is-the-posterior-predictive-distribution-of-a-future-outcome" class="nav-link" data-scroll-target="#what-is-the-posterior-predictive-distribution-of-a-future-outcome"><span class="header-section-number">7</span> What is the posterior predictive distribution of a future outcome?</a></li>
+  </ul>
+</nav>
+</div>
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
@@ -2326,6 +2341,12 @@ window.Quarto = {
 
 <div class="quarto-title-meta">
 
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Karthik Thrikkadeeri </p>
+          </div>
+  </div>
     
     <div>
     <div class="quarto-title-meta-heading">Published</div>
@@ -2439,13 +2460,13 @@ window.Quarto = {
 <span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>post_mcmc_mean; post_mcmc_var; post_mcmc_sd</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.4458574</code></pre>
+<pre><code>[1] 0.4457893</code></pre>
 </div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.0002498064</code></pre>
+<pre><code>[1] 0.0002492613</code></pre>
 </div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.01580526</code></pre>
+<pre><code>[1] 0.01578801</code></pre>
 </div>
 </div>
 </section>
@@ -2462,7 +2483,7 @@ window.Quarto = {
 <div class="cell">
 <div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(mcmc[mcmc <span class="sc">&lt;</span> <span class="fl">0.485</span>])<span class="sc">/</span><span class="fu">length</span>(mcmc)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.9932</code></pre>
+<pre><code>[1] 0.99375</code></pre>
 </div>
 </div>
 </section>
@@ -2480,7 +2501,7 @@ window.Quarto = {
 <div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">quantile</span>(mcmc, <span class="fu">c</span>(<span class="fl">0.025</span>, <span class="fl">0.975</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>     2.5%     97.5% 
-0.4150942 0.4769888 </code></pre>
+0.4148751 0.4766785 </code></pre>
 </div>
 </div>
 </section>
