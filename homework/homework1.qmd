@@ -1,0 +1,142 @@
+---
+title: "Homework 1"
+subtitle: "2025 Fall EXST 7151"
+date: today
+number-sections: true
+embed-resources: true
+knitr:
+  opts_chunk: 
+    warning: false
+    message: false
+editor_options: 
+  chunk_output_type: console
+---
+
+Question: Is the proportion of female births in the population of the placenta previa
+births ($\theta$) less than .485, the proportion of female births in the general population? A
+study in Germany found that of 980 placenta previa births, 437 were female. Use a
+Beta(4,5) prior. (*Use both exact value and Monte Carlo approximation for 3‐5 and only
+exact value for 6.*)
+
+Setting up:
+
+```{r}
+theta <- seq(0, 1, length.out = 100) # sequence of [0,1] values for theta
+
+# beta prior distribution
+prior_alpha <- 4
+prior_beta <- 5
+prior <- dbeta(theta, prior_alpha, prior_beta)
+
+# observed data
+n <- 980
+y <- 437
+likelihood <- dbinom(y, n, theta) # pdf
+
+# conjugated normalised posterior distribution:
+post_alpha <- prior_alpha + y
+post_beta <- prior_beta + (n - y)
+post <- dbeta(theta, post_alpha, post_beta)
+# # unnormalised posterior density then normalise
+# # (same shape but y axis changes to probs; pdf better than pmf here)
+# post_unn <- prior*likelihood
+# post <- post_unn/sum(post_unn)
+
+bayes_upd <- data.frame(theta, 
+                        Prior = prior, 
+                        Likelihood = likelihood, 
+                        Posterior = post)
+```
+
+# What is the posterior distribution of $\theta$?
+
+The posterior distribution is $Beta(`r post_alpha`, `r post_beta`)$
+
+```{r}
+plot(bayes_upd$theta, bayes_upd$Posterior, 
+     xlab = expression(theta), ylab = "Density")
+```
+
+# Plot the prior, likelihood, and posterior on the same graph
+
+```{r}
+library(tidyverse)
+
+bayes_upd %>% 
+  pivot_longer(cols = c("Prior", "Likelihood", "Posterior"),
+               names_to = "Distribution", values_to = "Density") %>% 
+  mutate(Distribution = factor(Distribution,
+                               levels = c("Posterior", "Likelihood", "Prior"))) %>% 
+  ggplot(aes(x = theta, y = Density, lty = Distribution)) +
+  geom_line() +
+  xlab(expression(theta)) +
+  theme_classic()
+```
+
+Because the likelihood is normalised (and because the random variable here is continuous, not discrete), its peak has much smaller values of density (y-axis) than the posterior.
+
+# Get the posterior mean/variance/sd of θ
+
+**Exact:**
+
+```{r}
+post_exact_mean <- post_alpha / (post_alpha + post_beta)
+post_exact_var <- (post_alpha * post_beta) / 
+  ((post_alpha + post_beta)^2 * (post_alpha + post_beta + 1))
+post_exact_sd <- sqrt(post_exact_var)
+
+post_exact_mean; post_exact_var; post_exact_sd
+```
+
+**MCMC:**
+
+```{r}
+mcmc <- rbeta(100000, post_alpha, post_beta)
+post_mcmc_mean <- mean(mcmc)
+post_mcmc_var <- var(mcmc)
+post_mcmc_sd <- sqrt(post_mcmc_var)
+
+post_mcmc_mean; post_mcmc_var; post_mcmc_sd
+```
+
+# Get the posterior probability that θ is less than .485
+
+**Exact:**
+
+```{r}
+pbeta(0.485, post_alpha, post_beta)
+```
+
+**MCMC:**
+
+```{r}
+length(mcmc[mcmc < 0.485])/length(mcmc)
+```
+
+# Get the 95% credible interval for θ
+
+**Exact:**
+
+```{r}
+qbeta(c(0.025, 0.975), post_alpha, post_beta)
+```
+
+**MCMC:**
+
+```{r}
+quantile(mcmc, c(0.025, 0.975))
+```
+
+# Get the 95% HPD region for θ
+
+```{r}
+library(binom)
+
+hpd <- binom.bayes(y, n, type = "highest", 
+                   prior.shape1 = prior_alpha, prior.shape2 = prior_beta)
+hpd$lower; hpd$upper
+```
+
+# What is the posterior predictive distribution of a future outcome?
+
+The posterior predictive distribution for our beta posterior is a beta-binomial distribution. For a single future outcome, it reduces to a Bernoulli distribution whose success probability equals the posterior mean (`r post_exact_mean`).

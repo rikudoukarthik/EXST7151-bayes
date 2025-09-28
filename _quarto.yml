@@ -1,5 +1,8 @@
 project:
   type: website
+  render: 
+    - "*.qmd"
+    - "!homework/"
   
 website:
   title: "EXST 7151: Bayesian Data Analysis"
