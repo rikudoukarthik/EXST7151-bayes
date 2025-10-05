@@ -423,3 +423,149 @@ fn_post(true_theta = 0.8, n = 50, prior_alpha = 150, prior_beta = 600)
 fn_post(true_theta = 0.8, n = 100, prior_alpha = 150, prior_beta = 600)
 ```
 
+
+# Other conjugate models
+
+**2025-09-29--10-01**
+
+## Normal distribution 
+
+Single parameter (known variance, estimate mean), one data point:
+
+- Conjuage prior is normal distribution with hyperparameters known
+- Precision is reciprocal of variance.
+- In normal posterior distribution, mean and variance are more easily represented in terms of precision (because variance in denominator)
+- $\mu_1 = \frac{\tau_0\mu_0 + \tau y}{\tau_0 + \tau}$ and $\tau_1 = \tau_0 + \tau$
+- Posterior mean is still weighted average of prior mean and sample mean
+
+```{r}
+mu0 <- 0
+sigma0sq <- 10^2
+sigmasq <- 5^2
+y <- -5.2
+
+(sigma1sq <- 1/(1/sigma0sq + 1/sigmasq))
+(mu1 <- (mu0/sigma0sq + y/sigmasq)*sigma1sq)
+
+curve(dnorm(x, mu0, sqrt(sigma0sq)), # R function defines in mean and sd, not mean and var
+      from = -25, to = 25,
+      ylim = c(0, 0.09), lty = 3, lwd = 4, 
+      xlab = expression(mu),
+      ylab = "density")
+curve(dnorm(x, y, sqrt(sigmasq)),
+      add = TRUE, lty = 2, lwd = 4)
+curve(dnorm(x, mu1, sqrt(sigma1sq)),
+      add = TRUE, lty = 1, lwd = 4)
+legend(8, 0.09, c("Prior", "Likelihood", "Posterior"),
+       lty = 3:1, lwd = 3)
+```
+
+Single parameter (known variance, estimate mean), multiple data points:
+
+- Easy way to estimate is slightly change parameters for posterior distribution as in case of one data point. Now becomes $N(\bar{\mu}, \frac{\sigma^2}{n})$
+- $\mu_n = \frac{\tau_0\mu_0 + \tau \bar{y}}{\tau_0 + \tau}$ and $\tau_n = \tau_0 + \tau$ where $\tau = \frac{n}{\sigma^2}$ and rest remains the same.
+
+Worked example:
+
+```{r}
+mu0 <- 180
+sigma0sq <- 40^2
+sigmasq <- 20^2
+y <- c(145, 147, 155, 180, 110, 160, 120, 100, 130, 170)
+
+# use the distribution of ybar
+ybar <- mean(y)
+n <- length(y)
+sigmasq <- sigmasq/n
+
+(sigmansq <- 1/(1/sigma0sq + 1/sigmasq))
+(mun <- (mu0/sigma0sq + ybar/sigmasq)*sigmansq)
+
+curve(dnorm(x, mu0, sqrt(sigma0sq)), # R function defines in mean and sd, not mean and var
+      from = 100, to = 250,
+      ylim = c(0, 0.07), lty = 3, lwd = 4, 
+      xlab = expression(mu),
+      ylab = "density")
+curve(dnorm(x, ybar, sqrt(sigmasq)),
+      add = TRUE, lty = 2, lwd = 4)
+curve(dnorm(x, mun, sqrt(sigmansq)),
+      add = TRUE, lty = 1, lwd = 4)
+legend(200, 0.07, c("Prior", "Likelihood", "Posterior"),
+       lty = 3:1, lwd = 3)
+```
+
+If prior mean is far from true mean, huge effect on posterior.
+
+Single parameter (known mean, estimate variance), multiple data points:
+
+- Now one part of likelihood function which we were ignoring as constant is no longer constant.
+- Variance cannot take negative values, so prior cannot be normal or beta. 
+- Gamma is a good candidate but is not a conjugate prior.
+- Inverse gamma is a good conjugate prior.
+- If we use a non-informative prior like uniform distribution in this case, the prior is an improper prior because the curve does not integrate to 1 (but to $\infty$), and it's not a probability distribution.
+- This is not a problem if improper prior combined with likelihood gives proper posterior. But if posterior is also improper, it is not a probability distribution and therefore cannot make inference (cannot take mean or variance), so need to choose different prior.
+- Proper priors always give proper posteriors. But there are certain well known improper priors which also always give proper posteriors.
+- Special case of IG is when both $\alpha$ and $\beta$ are zero, which gives something that's not really an IG. But this is the standard non-informative prior. **Jeffrey's default prior for variance of normal distribution**, and it is an improper prior.
+
+Example:
+
+```{r}
+data <- read.table("../inv_gamma_data.txt", header = TRUE)
+heights <- data[, 1]
+n <- length(heights)
+mu <- 67
+alpha <- 5; beta <- 20
+alpha_n <- alpha + n/2
+beta_n <- beta + sum((heights - mu)^2)/2
+
+# MCMC
+library(MCMCpack)
+posterior <- rinvgamma(10000, alpha_n, beta_n)
+(post_mean <- mean(posterior))
+(post_var <- var(posterior))
+
+# exact
+(beta_n/(alpha_n - 1)); (beta_n^2/((alpha_n - 1)^2 * (alpha_n-2)))
+```
+
+## Exponential distribution
+
+- Special case of gamma when shape parameter $\alpha = 1$
+- Conjugate prior is also gamma $Ga(\alpha, \beta)$
+- Then posterior is $Ga(\alpha + n, \beta + \sum{x_i})$
+- Default prior, Jeffrey's prior ($p(\theta) \propto 1/\theta$), is improper when $\alpha = \beta = 0$ but posterior is still proper.
+- Uniform prior is also possible in this case, because posterior will still be proper.
+
+## Poisson distribution
+
+- Conjugate prior is gamma 
+- Getting exact calculation of posterior estimates might be difficult, so MCMC approximation is better.
+
+```{r}
+post1 <- rgamma(10000, 219, 112)
+post2 <- rgamma(10000, 68, 45)
+mean(post1 > post2)
+```
+
+- Posterior predictive distribution is a negative-binomial distribution $negbin(\alpha + t, \beta + n)$
+
+```{r}
+a <- 2
+b <- 1
+n1 <- 111
+sy1 <- 217
+n2 <- 44
+sy2 <- 66
+
+y <- 0:10 
+dnbinom(y, size = (a + sy1), mu = (a + sy1) / (b + n1)) 
+dnbinom(y, size = (a + sy2), mu = (a + sy2) / (b + n2)) 
+
+# to predict prob that randomly selected new woman from one will have more kids than other
+z1 <- rnbinom(10000, size = (a + sy1), mu = (a + sy1) / (b + n1))
+z2 <- rnbinom(10000, size = (a + sy2), mu = (a + sy2) / (b + n2))
+mean(z1 > z2)
+# same number of kids
+mean(z1 == z2)
+```
+

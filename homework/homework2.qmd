@@ -1,0 +1,122 @@
+---
+title: "Homework 2"
+subtitle: "2025 Fall EXST 7151"
+date: today
+author: "Karthik Thrikkadeeri"
+table-of-contents: true
+number-sections: true
+embed-resources: true
+knitr:
+  opts_chunk: 
+    warning: false
+    message: false
+editor_options: 
+  chunk_output_type: console
+---
+
+**Question:** 
+
+A random sample of 18 2‐year‐old girls is drawn from a child care center, and their heights are measured: 44.1 38.6 38.2 27.2 21.1 53.8 28.0 41.8 23.6 39.2 42.6 36.5 29.5 28.3 25.9
+52.9 19.1 29.2
+
+1. Assume the heights in the population of 2 year old girls are normally distributed with unknown mean $\mu$ and known standard deviation 10 inches. Suppose your prior distribution for $\mu$ is normal with mean 30 and standard deviation 6.  
+    a. Get the posterior distribution for $\mu$.  
+    b. Get the posterior mean, variance, sd, 5th and 95th percentile for $\mu$.
+
+1. Assume the heights in the population of 2 year old girls are normally distributed with known mean $\mu = 32$ inches and unknown variance $\sigma^2$. Suppose your prior distribution for $\sigma^2$ is inverse gamma(2,20).  
+    a. Get the posterior distribution for $\sigma^2$.  
+    b. Get the posterior mean, variance, sd, 5th and 95 th percentile for $\sigma^2$.
+
+Use exact values, not Monte Carlo approximation.
+
+**Solution:**
+
+# Unknown mean
+
+Setting up:
+
+```{r}
+mu_0 <- 30
+sigma_0_sq <- 6^2
+sigma_sq <- 10^2
+y <- c(44.1, 38.6, 38.2, 27.2, 21.1, 53.8, 28.0, 41.8, 23.6, 39.2, 42.6, 36.5, 
+       29.5, 28.3, 25.9, 52.9, 19.1, 29.2)
+
+# use the distribution of ybar
+y_bar <- mean(y)
+n <- length(y)
+sigma_sq <- sigma_sq/n
+
+sigma_n_sq <- 1/(1/sigma_0_sq + 1/sigma_sq)
+mu_n <- (mu_0/sigma_0_sq + y_bar/sigma_sq)*sigma_n_sq
+
+curve(dnorm(x, mu_0, sqrt(sigma_0_sq)), # R function defines in mean and sd, not mean and var
+      from = 10, to = 70,
+      ylim = c(0, 0.2),
+      lty = 3, lwd = 4, 
+      xlab = expression(mu),
+      ylab = "density")
+curve(dnorm(x, y_bar, sqrt(sigma_sq)),
+      add = TRUE, lty = 2, lwd = 4)
+curve(dnorm(x, mu_n, sqrt(sigma_n_sq)),
+      add = TRUE, lty = 1, lwd = 4)
+legend(50, 0.2, c("Prior", "Likelihood", "Posterior"),
+       lty = 3:1, lwd = 3)
+```
+
+## Posterior distribution
+
+```{r}
+mu_n; sigma_n_sq
+```
+
+The posterior distribution is a $Normal(`r mu_n`, `r sigma_n_sq`)$.
+
+## Posterior summaries
+
+The posterior mean, variance, sd, and 5th and 95th percentiles for $\mu$ are:
+
+```{r}
+perc5 <- qnorm(0.05, mu_n, sqrt(sigma_n_sq))
+perc95 <- qnorm(0.95, mu_n, sqrt(sigma_n_sq))
+
+mu_n; sigma_n_sq; sqrt(sigma_n_sq); perc5; perc95
+```
+
+# Unknown variance
+
+Setting up:
+
+```{r}
+# using n from before
+
+mu <- 32
+alpha <- 2; beta <- 20
+alpha_n <- alpha + n/2
+beta_n <- beta + sum((y - mu)^2)/2
+```
+
+## Posterior distribution
+
+```{r}
+alpha_n; beta_n
+```
+
+The posterior distribution is a $inv-gamma(`r alpha_n`, `r beta_n`)$.
+
+## Posterior summaries
+
+The posterior mean, variance, sd, and 5th and 95th percentiles for $\sigma^2$ are:
+
+```{r}
+post_mean <- (beta_n/(alpha_n - 1))
+post_var <- (beta_n^2/((alpha_n - 1)^2 * (alpha_n-2)))
+post_sd <- sqrt(post_var)
+
+# Percentiles for Inv-Gamma: use Gamma quantiles since 
+# 1/X ~ Gamma(shape = alpha, rate = beta)
+post_5 <- 1 / qgamma(1 - 0.05, shape = alpha_n, rate = beta_n)
+post_95 <- 1 / qgamma(1 - 0.95, shape = alpha_n, rate = beta_n)
+
+post_mean; post_var; post_sd; post_5; post_95
+```
