@@ -505,7 +505,7 @@ Single parameter (known mean, estimate variance), multiple data points:
 - If we use a non-informative prior like uniform distribution in this case, the prior is an improper prior because the curve does not integrate to 1 (but to $\infty$), and it's not a probability distribution.
 - This is not a problem if improper prior combined with likelihood gives proper posterior. But if posterior is also improper, it is not a probability distribution and therefore cannot make inference (cannot take mean or variance), so need to choose different prior.
 - Proper priors always give proper posteriors. But there are certain well known improper priors which also always give proper posteriors.
-- Special case of IG is when both $\alpha$ and $\beta$ are zero, which gives something that's not really an IG. But this is the standard non-informative prior. **Jeffrey's default prior for variance of normal distribution**, and it is an improper prior.
+- Special case of IG is when both $\alpha$ and $\beta$ are zero, which gives something that's not really an IG. But this is the standard non-informative prior. **Jeffreys default prior for variance of normal distribution**, and it is an improper prior.
 
 Example:
 
@@ -533,7 +533,7 @@ posterior <- rinvgamma(10000, alpha_n, beta_n)
 - Special case of gamma when shape parameter $\alpha = 1$
 - Conjugate prior is also gamma $Ga(\alpha, \beta)$
 - Then posterior is $Ga(\alpha + n, \beta + \sum{x_i})$
-- Default prior, Jeffrey's prior ($p(\theta) \propto 1/\theta$), is improper when $\alpha = \beta = 0$ but posterior is still proper.
+- Default prior, Jeffreys prior ($p(\theta) \propto 1/\theta$), is improper when $\alpha = \beta = 0$ but posterior is still proper.
 - Uniform prior is also possible in this case, because posterior will still be proper.
 
 ## Poisson distribution
@@ -569,3 +569,245 @@ mean(z1 > z2)
 mean(z1 == z2)
 ```
 
+
+
+# Conjugate priors and prior distributions
+
+**2025-10-06--08**
+
+## Priors
+
+- Subjective vs objective (non-informative)
+- Subjective
+    - Conjugate
+    - Non-conjugate: posterior is not closed-form, but with MCMC not a problem, just need more compute
+- Objective
+    - Reference
+        - Non-informative
+        - Likelihood dominates posterior
+        - May not be probability distribution (not bounded; improper). Not major concern if posterior is proper. (Most cases this is true, but in complex models posterior can also be improper and one cannot make inference.)
+        - Beta(0,0) is improper, and can give improper posterior if data yield 0 successes or failures (e.g., Beta(0,2)). Hence Beta(0.5,0.5) is more commonly used as a proper prior.
+        - Constant/flat rule prior is not transformation invariant, distribution changes.
+    - Jeffreys
+        - Jeffreys priors remedy this, by ensuring same posterior inference for any transformation of parameter (even if posterior distribution itself is different).
+        - Based on Fisher information.
+        - Non-informative
+        - Transformation invariant
+        - Posterior may not be proper
+        - Does not work well for multi-parameter models
+    - Diffuse
+        - Remedy improper posteriors in Jeffreys
+        - Proper prior with little info about parameter (spread of prior measures uncertainty)
+        - Diffuse: large SD, so weakly informative
+    - Sometimes cannot use non-informative priors, like in model comparison or selection.
+    - Bayes Factor quite sensitive to choices of hyperparameters of vague proper prios
+- Can do sensitivity checks for choice of prior, especially in subjective priors. e.g., use Gamma and inverse Gamma separately to combine with likelihood (data) and get posterior; if posterior similar then can use either, if not, perhaps better to go with non-informative.
+
+## Monte Carlo simulation
+
+- Monte Carlo approximation generates independent values from posterior distribution, but MCMC generates dependent values (form a Markov Chain, one value depends only on previous).
+- Generating values randomly using distribution functions in R (as done so far) is Monte Carlo approximation, not MCMC.
+- For multivariate cases, we need joint distribution. Depending on whether the component distributions are known or not, we may need to use MCMC and generate non-independent values.
+
+## Conjugate priors
+
+- Easy to derive posterior, but expert opinion may not conform to conjugate prior and conjugates may not always exist.
+
+```{r}
+tibble::tribble(
+  ~ "Sampling distribution", ~ "Conjugate prior",
+  "Binomial(n, theta)", "Beta",
+  "Poisson(theta)", "Gamma",
+  "Exp(theta)", "Gamma",
+  "N(theta, var), var known", "Normal",
+  "N(mean, theta), mean known", "Inverse-gamma",
+  "Gamma(alpha, theta), alpha known", "Gamma",
+  "Pareto(x, theta), x known", "Gamma",
+  "Weibull(theta, k), k known", "Inverse-gamma",
+  "Inverse-gamma(alpha, theta), alpha known", "Gamma"
+)
+```
+
+# Multi-parameter models: Normal model
+
+**2025-10-13--15**
+
+## Non-informative prior
+
+- Easiest way is to assume independent priors for each parameters, so joint distribution will be product of each. (Prior beliefs about each parameter need to be independent.) But this may not be conjugate.
+- Conditional posterior distribution of two-parameter normal distribution sample is Normal(mean, var/n), where var can be estimated as IG($\frac{n - 1}{2}, s^2 \frac{n - 1}{2}$). Marginal posterior distribution of mean is a non-standardised t-distribution.
+- This can then be generated using MC.
+- Good to avoid loops, can separately generate MC for each parameter.
+
+## Example
+
+Simon Newcomb set up an experiment in 1882 to measure the speed of light. He measured the amount of time required for light to travel a distance of 7442 m. Assume $y_i \sim N(\mu, \sigma^2)$ *iid*, $i = 1, ..., 66$. $\bar{y} = 26.2, s = 10.8$. Use both join analysis and marginal analysis to get the posterior distribution of $\mu$ assuming the non-informative prior.
+
+```{r}
+n <- 66
+y_bar <- 26.2
+var <- 10.8^2
+
+# marginal approach
+
+sample_t <- rt(10000, n-1)
+sample_mu <- sample_t * sqrt(var/n) + y_bar
+
+mean(sample_mu); quantile(sample_mu, c(0.025, 0.975))
+
+# joint approach
+library(MCMCpack)
+
+sample_sigma2 <- rinvgamma(100000, (n - 1)/2, var * (n - 1)/2)
+sample_mu <- rnorm(10000, y_bar, sqrt(sample_sigma2/n))
+mean(sample_mu); quantile(sample_mu, c(0.025, 0.975))
+
+# joint approach gives joint samples from joint distribution, but single column represents marginal
+cbind(sample_mu, sample_sigma2)
+```
+
+## Conjugate prior
+
+Normal-Inverse-Gamma prior:
+
+$$ (\mu, \sigma^2) \sim NIG(\mu_0, \tau_0, \frac{\nu_0}{2}, \frac{SS_0^2}{2}) $$
+
+where $\mu_0$ and $\tau_0$ are mean and sample of a set of prior observations, and $\nu_0$ and $SS_0^2$ are df and sum of squares (variance x df) of prior observations.
+
+This conjugate prior not commonly used. $\mu$ and $\sigma^2$ are not independent in prior distributions.
+
+$SS_n^2$ is posterior variation: prior variation + observed variation + variation between prior mean and sample mean.
+
+Marginal posterior distribution of $\mu$:
+
+$$ (\mu | x) \sim t_{\nu_n}(\mu_n, \frac{\sigma_n^2}{\tau_n}) , \sigma_n^2 = \frac{SS_n^2}{\nu_n}) $$
+
+## Semi-conjugate prior
+
+Independent priors for the parameters:
+
+$$ \mu \sim N(\mu_0, \tau_0^2), \sigma^2 \sim IG(\frac{\nu_0}{2}, \frac{\nu_0}{2} \sigma_0^2) $$
+
+In posterior, the two parameters are not independent, so not a conjugate prior. And is not closed-form. Posterior:
+
+$$ \mu | \sigma^2, x \sim N(\mu_n, \tau_n^2) $$
+
+Gibbs sampler uses these conditional distributions.
+
+## Example: SPF
+
+*(Very vague.)*
+
+SPF 5 means an individual that can tolerate X minutes of sunlight without any sunscreen can tolerate 5X minutes with sunscreen. Data on 13 individuals (tolerance, in min, with and without sunscreen).
+
+Model: Y = log(TRT) - log(CONTROL) ~ $N(\mu, \sigma^2)$. Then E(log(TRT/CONTROL)) = $\mu$ = log(SPF). Interested in exp($\mu$) = SPF. Summary stats: $\bar{y} = 1.998, s^2 = 0.525, n = 13$.
+
+(Using log because regular ratio takes only positive values, and likely has positive skew. Log ratios can be assumed to follow normal.)
+
+Prior information:  
+    1. Prior median SPF is 16
+    1. P(SPF > 64) = 0.01
+    1. Information in prior is worth 25 observations
+
+```{r}
+require(MCMCpack)
+
+# joint
+n_post <- 10000
+sample_sig2 <- rinvgamma(n_post, 37/2, 197.1/2)
+sample_mu <- rnorm(n_post, 2.508, sqrt(sample_sig2/38))
+post_samples <- cbind(sample_mu, sample_sig2)
+
+# marginal mu
+post_mu <- rt(n_post, 37) * sqrt(197.1/(37*38)) + 2.508
+
+mean(post_mu); mean(post_samples[,1])
+
+# SPF
+post_SPF <- exp(post_mu)
+hist(post_SPF)
+
+# posterior predictive distribution
+nu_n <- 37
+tau_n <- 38
+mu_n <- 2.508
+SSn2 <- 197.1
+
+sample_z <- rep(0, n_post)
+for (i in 1:n_post) {
+  sample_z[i] <- rnorm(1, post_samples[i, 1], sqrt(post_samples[i, 2]))
+}
+exp(sample_z)
+quantile(exp(sample_z))
+```
+
+
+
+# Multi-parameter models: Multinomial model
+
+**2025-10-20**
+
+- Generalisation of binomial
+- Basic example: roll of die (cf coin toss binomial)
+- Discrete, so pmf not pdf
+- Conjugate prior is Dirichlet distribution (non-negative values, sum to 1), $\theta \sim D(\alpha)$
+- Posterior: $\theta | x \sim D(\alpha + x)$
+
+```{r}
+require(MCMCpack)
+
+rdirichlet(1, c(1, 5, 4, 2))
+sum(rdirichlet(1, c(1, 5, 4, 2)))
+
+vec <- rdirichlet(100, c(5, 1, 7, 8))
+apply(vec, 1, sum)
+```
+
+- Hyperparameters:
+    - Sum of all $\alpha$ is number of prior trials (measure of prior confidence)
+    - $\alpha_j$ is number of times the *j*th category occurs in prior trials
+- Symmetric: all outcomes equally likely
+
+# Markov Chain Monte Carlo
+
+**2025-10-22**
+
+- Need alternative methods to compute posterior distributions and summaries for non-conjugate priors.
+- F use logistic regression more often, B use probit regression more often. Conjugate prior does not exist in either case.
+- Markov Chain is a sequence of random variables, such that distribution of value at one point depends only on most recent point. *The future depends on the present and not the past.*
+- Simulate from a Markov Chain whose stationary distribution is the desired posterior distribution (e.g., via Gibbs sampler and/or Metropolis-Hastings algorithms), then calculate MC estimates.
+- Monte Carlo: most common statistical technique to perform integral approximation.
+- In simple models, like those with conjugate prior, easy to derive posterior in closed form, and here MC sampling is not necessary but convenient.
+- When posterior density does not have recognisable form, might be possible to factor the distribution and simulate in parts (as done for the normal model).
+- For more complicated problems, may not possible to directly generate samples from target distribution (e.g., non-conjugate settings and situations where we cannot sample from joint posterior).
+
+## Metropolis algorithm
+
+- For single parameter models, Metropolis or Metropolis-Hastings. For multi-parameter, Gibbs Sampler with perhaps Metropolis within.
+- Metropolis only requires prior and likelihood, which is the kernel of the posterior distribution. Produces an approximation of posterior distribution, in the form of a large number of $\theta$ values sampled from the posterior.
+- Burn-in period: ignore first few iterations before distribution matches target distribution
+
+```{r}
+# suppose on island 4
+rbinom(1, 1, 0.5)
+# propose move to island 5
+
+alpha <- 2
+beta <- 2
+y <- 1
+sigma2 <- 1
+
+post <- function(mu) {
+  dnorm(mu, y, sqrt(sigma2)) * dgamma(mu, alpha, beta)
+}
+x <- seq(0.01, 10, 0.1)
+y <- post(x)
+plot(x, y) # cannot summarise, unnormalised
+
+mu_current <- 0.2
+mu_proposed <- 0.4
+acc_prob <- min(1, post(mu_proposed)/post(mu_current))
+
+r <- runif(1)
+r < acc_prob
+```
